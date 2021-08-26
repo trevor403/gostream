@@ -48,8 +48,35 @@ const start_stream = async function(target, cursorHandler, _set_scale_handler) {
             console.log(e);
         }
     }
-    peerConnection.onsignalingstatechange = () => console.log(peerConnection.signalingState);
-    peerConnection.oniceconnectionstatechange = () => console.log(peerConnection.iceConnectionState);
+    peerConnection.onsignalingstatechange = () => {
+        console.log("AA", peerConnection.signalingState);
+    }
+    peerConnection.oniceconnectionstatechange = () => {
+        console.log("BB", peerConnection.iceConnectionState);
+    }
+
+
+
+        // this._webrtc.onmessage = this._recvMessage.bind(this);
+        // this._webrtc.onopen = () => {
+        //     Log.Debug('>> WebRTC.onopen');
+        //     if (this._webrtc.protocol) {
+        //         Log.Info("Server choose sub-protocol: " + this._webrtc.protocol);
+        //     }
+
+        //     this._eventHandlers.open();
+        //     Log.Debug("<< WebRTC.onopen");
+        // };
+        // this._webrtc.onclose = (e) => {
+        //     Log.Debug(">> WebRTC.onclose");
+        //     this._eventHandlers.close(e);
+        //     Log.Debug("<< WebRTC.onclose");
+        // };
+        // this._webrtc.onerror = (e) => {
+        //     Log.Debug(">> WebRTC.onerror: " + e);
+        //     this._eventHandlers.error(e);
+        //     Log.Debug("<< WebRTC.onerror: " + e);
+        // };
 
     // set up offer
     const cursorChannel = peerConnection.createDataChannel("cursor", { negotiated: true, id: 2 });
@@ -99,6 +126,15 @@ const start_stream = async function(target, cursorHandler, _set_scale_handler) {
 
 export default class DisplayStream {
     constructor(target, updateCursor) {
+        this._webrtc = null;  // WebRTC object
+
+        this._eventHandlers = {
+            message: () => {},
+            open: () => {},
+            close: () => {},
+            error: () => {}
+        };
+
         // the full frame buffer (logical canvas) size
         this._fbWidth = 0;
         this._fbHeight = 0;
@@ -132,7 +168,9 @@ export default class DisplayStream {
         }
 
         this._scale_handler = function(scale) {};
-        start_stream(target, _cursorHandler.bind(this), this._set_scale_handler.bind(this));
+        let bound__cursorHandler = _cursorHandler.bind(this)
+        let bound__set_scale_handler = this._set_scale_handler.bind(this)
+        this._connect = () => start_stream(target, bound__cursorHandler, bound__set_scale_handler);
 
         // the visible canvas viewport (i.e. what actually gets seen)
         this._viewportLoc = { 'x': 0, 'y': 0, 'w': this._target.width, 'h': this._target.height };
@@ -143,6 +181,23 @@ export default class DisplayStream {
 
         this._scale = 1.0;
         this._clipViewport = false;
+    }
+
+    // Event Handlers
+    off(evt) {
+        this._eventHandlers[evt] = () => {};
+    }
+
+    on(evt, handler) {
+        this._eventHandlers[evt] = handler;
+    }
+
+    init() {
+        this._webrtc = null;
+    }
+
+    connect() {
+        this._connect();
     }
 
     // ===== PROPERTIES =====

@@ -10,7 +10,7 @@ import EventTargetMixin from './util/eventtarget.js';
 import Display from "./display.js";
 import DisplayStream from "./display_stream.js";
 import Keyboard from "./input/keyboard.js";
-import GestureHandler from "./input/gesturehandler.js";
+// import GestureHandler from "./input/gesturehandler.js";
 import Cursor from "./util/cursor.js";
 import KeyTable from "./input/keysym.js";
 import XtScancode from "./input/xtscancodes.js";
@@ -86,7 +86,7 @@ export default class TSD extends EventTargetMixin {
         this._display_webrtc = null;
         this._flushing = false;         // Display flushing state
         this._keyboard = null;          // Keyboard input handler object
-        this._gestures = null;          // Gesture input handler object
+        // this._gestures = null;          // Gesture input handler object
 
         // Timers
         this._disconnTimer = null;      // disconnection timer
@@ -191,68 +191,67 @@ export default class TSD extends EventTargetMixin {
             Log.Error("Display exception: " + exc);
             throw exc;
         }
-        this._display.onflush = this._onFlush.bind(this);
+        // this._display.onflush = this._onFlush.bind(this);
 
         this._keyboard = new Keyboard(this._canvas);
         this._keyboard.onkeyevent = this._handleKeyEvent.bind(this);
 
-        this._gestures = new GestureHandler();
+        // this._gestures = new GestureHandler();
 
-        this._sock = new Websock();
-        this._sock.on('message', () => {
-            this._handleMessage();
-        });
-        this._sock.on('open', () => {
-            if ((this._tsdConnectionState === 'connecting') &&
-                (this._tsdInitState === '')) {
-                this._tsdInitState = 'ProtocolVersion';
-                Log.Debug("Starting VNC handshake");
-            } else {
-                this._fail("Unexpected server connection while " +
-                           this._tsdConnectionState);
-            }
-        });
-        this._sock.on('close', (e) => {
-            Log.Debug("WebSocket on-close event");
-            let msg = "";
-            if (e.code) {
-                msg = "(code: " + e.code;
-                if (e.reason) {
-                    msg += ", reason: " + e.reason;
-                }
-                msg += ")";
-            }
-            switch (this._tsdConnectionState) {
-                case 'connecting':
-                    this._fail("Connection closed " + msg);
-                    break;
-                case 'connected':
-                    // Handle disconnects that were initiated server-side
-                    this._updateConnectionState('disconnecting');
-                    this._updateConnectionState('disconnected');
-                    break;
-                case 'disconnecting':
-                    // Normal disconnection path
-                    this._updateConnectionState('disconnected');
-                    break;
-                case 'disconnected':
-                    this._fail("Unexpected server disconnect " +
-                               "when already disconnected " + msg);
-                    break;
-                default:
-                    this._fail("Unexpected server disconnect before connecting " +
-                               msg);
-                    break;
-            }
-            this._sock.off('close');
-        });
-        this._sock.on('error', e => Log.Warn("WebSocket on-error event"));
+        // this._sock = new WebRTC(this._stream, this._updateCursor.bind(this));
+        // this._sock.on('message', () => {
+        //     this._handleMessage();
+        // });
+        // this._sock.on('open', () => {
+        //     if ((this._tsdConnectionState === 'connecting') &&
+        //         (this._tsdInitState === '')) {
+        //         this._tsdInitState = 'ProtocolVersion';
+        //         Log.Debug("Starting VNC handshake");
+        //     } else {
+        //         this._fail("Unexpected server connection while " +
+        //                    this._tsdConnectionState);
+        //     }
+        // });
+        // this._sock.on('close', (e) => {
+        //     Log.Debug("WebSocket on-close event");
+        //     let msg = "";
+        //     if (e.code) {
+        //         msg = "(code: " + e.code;
+        //         if (e.reason) {
+        //             msg += ", reason: " + e.reason;
+        //         }
+        //         msg += ")";
+        //     }
+        //     switch (this._tsdConnectionState) {
+        //         case 'connecting':
+        //             this._fail("Connection closed " + msg);
+        //             break;
+        //         case 'connected':
+        //             // Handle disconnects that were initiated server-side
+        //             this._updateConnectionState('disconnecting');
+        //             this._updateConnectionState('disconnected');
+        //             break;
+        //         case 'disconnecting':
+        //             // Normal disconnection path
+        //             this._updateConnectionState('disconnected');
+        //             break;
+        //         case 'disconnected':
+        //             this._fail("Unexpected server disconnect " +
+        //                        "when already disconnected " + msg);
+        //             break;
+        //         default:
+        //             this._fail("Unexpected server disconnect before connecting " +
+        //                        msg);
+        //             break;
+        //     }
+        //     this._sock.off('close');
+        // });
+        // this._sock.on('error', e => Log.Warn("WebSocket on-error event"));
 
         // Slight delay of the actual connection so that the caller has
         // time to set up callbacks
         setTimeout(this._updateConnectionState.bind(this, 'connecting'));
 
-        console.log(Log.Debug)
         Log.Debug("<< TSD.constructor");
 
         // ===== PROPERTIES =====
@@ -392,20 +391,19 @@ export default class TSD extends EventTargetMixin {
         Log.Info("connecting to " + this._url);
 
         try {
-            // WebSocket.onopen transitions to the TSD init states
-            this._sock.open(this._url, this._wsProtocols);
+            this._display_webrtc.connect();
         } catch (e) {
             if (e.name === 'SyntaxError') {
                 this._fail("Invalid host or port (" + e + ")");
             } else {
-                this._fail("Error when opening socket (" + e + ")");
+                this._fail("Error when opening webrtc (" + e + ")");
             }
         }
 
         // Make our elements part of the page
         this._target.appendChild(this._screen);
 
-        this._gestures.attach(this._canvas);
+        // this._gestures.attach(this._canvas);
 
         this._cursor.attach(this._canvas);
         this._refreshCursor();
@@ -416,7 +414,7 @@ export default class TSD extends EventTargetMixin {
 
         // Always grab focus on some kind of click event
         this._canvas.addEventListener("mousedown", this._eventHandlers.focusCanvas);
-        this._canvas.addEventListener("touchstart", this._eventHandlers.focusCanvas);
+        // this._canvas.addEventListener("touchstart", this._eventHandlers.focusCanvas);
 
         // Mouse events
         this._canvas.addEventListener('mousedown', this._eventHandlers.handleMouse);
@@ -429,7 +427,7 @@ export default class TSD extends EventTargetMixin {
         this._canvas.addEventListener('contextmenu', this._eventHandlers.handleMouse);
 
         // Wheel events
-        this._canvas.addEventListener("wheel", this._eventHandlers.handleWheel);
+        this._canvas.addEventListener("wheel", this._eventHandlers.handleWheel, {passive: true});
 
         // Gesture events
         this._canvas.addEventListener("gesturestart", this._eventHandlers.handleGesture);
@@ -452,10 +450,10 @@ export default class TSD extends EventTargetMixin {
         this._canvas.removeEventListener('click', this._eventHandlers.handleMouse);
         this._canvas.removeEventListener('contextmenu', this._eventHandlers.handleMouse);
         this._canvas.removeEventListener("mousedown", this._eventHandlers.focusCanvas);
-        this._canvas.removeEventListener("touchstart", this._eventHandlers.focusCanvas);
+        // this._canvas.removeEventListener("touchstart", this._eventHandlers.focusCanvas);
         window.removeEventListener('resize', this._eventHandlers.windowResize);
         this._keyboard.ungrab();
-        this._gestures.detach();
+        // this._gestures.detach();
         this._sock.close();
         try {
             this._target.removeChild(this._screen);
