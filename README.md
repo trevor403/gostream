@@ -1,4 +1,10 @@
+## MOVED 
+New project is at [trevor403/noLatency](https://github.com/trevor403/noLatency)
+
+<hr/>
+
 # gostream
+(Forked from [edaniels/gostream](https://github.com/edaniels/gostream))
 
 gostream is a library to simplify the streaming of images as video to a series of WebRTC peers. The impetus for this existing was for doing simple GUI / video streaming to a browser all within go with as little cgo as possible. The package will likely be refactored over time to support some more generalized use cases and as such will be in version 0 for the time being. Many parameters are hard coded and need to be configurable over time. Use at your own risk, and please file issues!
 
